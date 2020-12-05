@@ -15,7 +15,7 @@ def balancedNeighbors(leftNeighbor, cur, rightNeighbor):
 
 
 def balancedOnOneSide(neighbor, curr):
-    if abs(neighbor - curr) > 2:
+    if curr-neighbor > 2:
         return False
     return True
 
