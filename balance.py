@@ -15,7 +15,7 @@ def balancedNeighbors(leftNeighbor, cur, rightNeighbor):
 
 
 def balancedOnOneSide(neighbor, curr):
-    if curr-neighbor > 2:
+    if curr - neighbor > 2:
         return False
     return True
 
@@ -66,17 +66,17 @@ while True:
             right = proc_array[right_index][0]
 
             if not balancedNeighbors(left, current, right):
-                if left < current < right:
+                if left < current <= right: #400 450 500
                     avg = floor((left + current) / 2)
                     numToGive = current - avg
                     left = left + numToGive
-                    current = current - numToGive
-                elif left > current > right:
+                    current = current - numToGive  # 425 425 500
+                elif left >= current > right:  #
                     avg = floor((right + current) / 2)
                     numToGive = current - avg
                     right = right + numToGive
                     current = current - numToGive
-                elif left < current > right:
+                elif left < current and current > right:
                     if left > right:  # 200 500 2
                         avg = floor((right + current) / 2)
                         numToGive = current - avg
@@ -103,7 +103,7 @@ while True:
                 proc_array[right_index][0] = right
 
         end = time.time()
-        if balanced() or ((end - start) / 60 >= 2):
+        if balanced() or ((end - start) / 60 >= 7):
             print("The number of cycles executed: " + str(index))
             print("The matrix after initializing : " + str(proc_array))
             exit(0)
