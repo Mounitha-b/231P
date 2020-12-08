@@ -3,6 +3,9 @@ import random
 from math import floor
 import time
 
+# Note: when we say current, we mean the processor whose load balancing activity it is currently
+# and we are checking the left neighbor (left processor) and right neighbor (right processor) of this processor.
+
 
 # generate a uniformly distributed random number between the low and high input values
 def generate_random_number(low, high):
@@ -49,6 +52,55 @@ def balanced_system():
     return True
 
 
+# check whether the termination conditions (overall system balanced or time limit exceeded) are met
+def check_termination():
+    # check overall system balance
+    if balanced_system():
+        print("Number of cycles executed: " + str(time_index))
+        print("The balanced matrix: " + str(processor_data))
+        exit(0)
+
+    # check time limit exceeded
+    end_time = time.time()
+    if (end_time - start_time) / 60 >= 5:
+        print("Time limit exceeded")
+        print("Number of cycles executed: " + str(time_index))
+        print("The final matrix: " + str(processor_data))
+        exit(0)
+
+
+#  get the balance between the left and the current neighbor
+def left_balance(left, current):
+    avg = floor((left + current) / 2)
+    num_to_give = current - avg
+    left = left + num_to_give
+    current = current - num_to_give
+    return left, current
+
+
+#  get the balance between the right and the current neighbor
+def right_balance(right, current):
+    avg = floor((right + current) / 2)
+    num_to_give = current - avg
+    right = right + num_to_give
+    current = current - num_to_give
+    return right, current
+
+
+# get the indices of the neighbours to get the load values
+def get_neighbor_indices(proc_index):
+    if proc_index == 0:
+        left_idx = len(processor_data) - 1
+        right_idx = proc_index + 1
+    elif proc_index == len(processor_data) - 1:
+        left_idx = proc_index - 1
+        right_idx = 0
+    else:
+        left_idx = proc_index - 1
+        right_idx = proc_index + 1
+    return left_idx, right_idx
+
+
 # get number of processors from the input argument
 number_of_processors = int(sys.argv[1])
 
@@ -59,27 +111,12 @@ processor_data = [[0 for i in range(2)]] * number_of_processors
 for i in range(0, number_of_processors):
     processor_data[i] = [generate_random_number(10, 1000), generate_random_number(100, 1000)]
 
-print("The initial matrix : " + str(processor_data))
+print("The initial matrix: " + str(processor_data))
 
 # start timing so we can break out of the run if system is taking a long time to converge
 start_time = time.time()
 
 time_index = 100
-
-
-# check whether the termination conditions (overall system balanced or time limit exceeded) are met
-def check_termination():
-    if balanced_system():
-        print("Number of cycles executed: " + str(time_index))
-        print("The balanced matrix : " + str(processor_data))
-        exit(0)
-    end_time = time.time()
-    if (end_time - start_time) / 60 >= 5:
-        print("Time limit exceeded")
-        print("Number of cycles executed: " + str(time_index))
-        print("The final matrix : " + str(processor_data))
-        exit(0)
-
 
 # loop representing the run to balance the system
 while True:
@@ -90,15 +127,7 @@ while True:
             processor_data[proc_idx][1] += generate_random_number(100, 1000)
 
             # get the indices of the neighbours to get the load values
-            if proc_idx == 0:
-                left_index = len(processor_data) - 1
-                right_index = proc_idx + 1
-            elif proc_idx == len(processor_data) - 1:
-                left_index = proc_idx - 1
-                right_index = 0
-            else:
-                left_index = proc_idx - 1
-                right_index = proc_idx + 1
+            left_index, right_index = get_neighbor_indices(proc_idx)
 
             # get load values from processor array
             left_load = processor_data[left_index][0]
@@ -108,41 +137,33 @@ while True:
             # if the neighbors are not balanced, then we need to do the balancing
             if not balanced_among_neighbors(left_load, current_load, right_load):
                 if left_load < current_load <= right_load:
-                    avg = floor((left_load + current_load) / 2)
-                    numToGive = current_load - avg
-                    left_load = left_load + numToGive
-                    current_load = current_load - numToGive
+                    # balance the left and current
+                    left_load, current_load = left_balance(left_load, current_load)
                 elif left_load >= current_load > right_load:
-                    avg = floor((right_load + current_load) / 2)
-                    numToGive = current_load - avg
-                    right_load = right_load + numToGive
-                    current_load = current_load - numToGive
+                    # balance the right and current
+                    right_load, current_load = right_balance(right_load, current_load)
                 elif left_load < current_load and current_load > right_load:
+                    # if current is greater than left and right, we need to try and give to both left and right
                     if left_load > right_load:
-                        avg = floor((right_load + current_load) / 2)
-                        numToGive = current_load - avg
-                        right_load = right_load + numToGive
-                        current_load = current_load - numToGive
+                        # give to right
+                        right_load, current_load = right_balance(right_load, current_load)
                         if not balanced_neighbors(left_load, current_load):
-                            avg = floor((left_load + current_load) / 2)
-                            numToGive = current_load - avg
-                            left_load = left_load + numToGive
-                            current_load = current_load - numToGive
+                            # if left and current are not balanced, then give from current to left
+                            left_load, current_load = left_balance(left_load, current_load)
                     elif right_load > left_load:
-                        avg = floor((left_load + current_load) / 2)
-                        numToGive = current_load - avg
-                        left_load = left_load + numToGive
-                        current_load = current_load - numToGive
+                        # give to left
+                        left_load, current_load = left_balance(left_load, current_load)
                         if not balanced_neighbors(right_load, current_load):
-                            avg = floor((right_load + current_load) / 2)
-                            numToGive = current_load - avg
-                            right_load = right_load + numToGive
-                            current_load = current_load - numToGive
+                            # if right and current are not balanced, then give from current to right
+                            right_load, current_load = right_balance(right_load, current_load)
 
+                # reset the loads after the balancing
                 processor_data[left_index][0] = left_load
                 processor_data[proc_idx][0] = current_load
                 processor_data[right_index][0] = right_load
 
+        # check if our run needs to terminate
         check_termination()
 
+    # increment the time interval
     time_index += 1
